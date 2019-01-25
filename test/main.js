@@ -15,7 +15,7 @@ const list = () => {
   return new Promise((resolve) => {
     const options = {
       countries: ['br'],
-      sourcesWhiteList: ['hidemyname'],
+      sourcesWhiteList: ['hidemyname', 'freeproxylist', 'freeproxylists'],
       // sourcesWhiteList: ['freeproxylist', 'gatherproxy', 'incloak', 'premproxy', 'proxydb'],
       sourcesBlackList: ['bitproxies', 'kingproxies'],
     };
