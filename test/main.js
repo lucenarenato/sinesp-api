@@ -4,25 +4,65 @@ const chaiAsPromised = require('chai-as-promised');
 const { join } = require('path');
 const { readFileSync } = require('fs');
 const { configure } = require('../.');
+const ProxyLists = require('proxy-lists');
 
 chai.use(chaiAsPromised);
 
 const expect = chai.expect;
 const results = JSON.parse(readFileSync(join(__dirname, 'results.json')));
 
+const list = () => {
+  return new Promise((resolve) => {
+    const options = {
+      countries: ['br'],
+      sourcesWhiteList: ['hidemyname'],
+      // sourcesWhiteList: ['freeproxylist', 'gatherproxy', 'incloak', 'premproxy', 'proxydb'],
+      sourcesBlackList: ['bitproxies', 'kingproxies'],
+    };
+
+    let proxies = [];
+
+    const listing = ProxyLists.getProxies(options);
+
+    listing.on('data', (fresh) => {
+      proxies = [...proxies, ...fresh];
+    });
+
+    listing.on('error', (error) => {
+      // console.error(error);
+    });
+
+    listing.once('end', () => {
+      resolve(proxies);
+    });
+  });
+};
+
 describe('search', function () {
-  const { search } = configure({
-    timeout: 0,
-    host: 'cidadao.sinesp.gov.br',
-    endpoint: '/sinesp-cidadao/mobile/consultar-placa/',
-    serviceVersion: 'v4',
-    androidVersion: '8.1.0',
-    secret: 'g8LzUadkEHs7mbRqbX5l',
-    maximumRetry: 3,
-    proxy: {
-      host: process.env.PROXY_HOST,
-      port: process.env.PROXY_PORT,
-    }
+
+  let search;
+
+  it('Configure', async function() {
+    this.timeout(300000);
+
+    const proxies = await list();
+    const proxy = proxies[Math.floor(Math.random() * proxies.length)];
+
+    search = configure({
+      timeout: 0,
+      host: 'cidadao.sinesp.gov.br',
+      endpoint: '/sinesp-cidadao/mobile/consultar-placa/',
+      serviceVersion: 'v4',
+      androidVersion: '8.1.0',
+      secret: 'g8LzUadkEHs7mbRqbX5l',
+      maximumRetry: 3,
+      proxy: {
+        host: proxy.ipAddress,
+        port: proxy.port,
+      }
+    }).search;
+
+    return expect(search).to.be.not.null;
   });
 
   /** Success tests * */
